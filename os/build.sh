@@ -10,8 +10,8 @@ STAGE_DIR="$SCRIPT_DIR/stage-camplayer"
 
 # ── Clone pi-gen if needed ─────────────────────────────────────────────────
 if [ ! -d "$PIGEN_DIR" ]; then
-  echo "Cloning pi-gen (arm_bookworm branch)..."
-  git clone --depth=1 --branch arm_bookworm \
+  echo "Cloning pi-gen (bookworm branch)..."
+  git clone --depth=1 --branch bookworm \
     https://github.com/RPi-Distro/pi-gen.git "$PIGEN_DIR"
 fi
 
