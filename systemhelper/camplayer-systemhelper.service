@@ -1,0 +1,19 @@
+[Unit]
+Description=Camplayer Systemhelper (TUI + Web Config API)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/usr/local/share/camplayer
+ExecStart=/usr/bin/python3 -m systemhelper
+Restart=on-failure
+RestartSec=5
+Environment=CAMPLAYER_CONFIG=/boot/camplayer-config.ini
+Environment=GO2RTC_URL=http://localhost:1984
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
