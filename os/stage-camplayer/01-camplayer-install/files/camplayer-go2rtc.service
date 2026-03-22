@@ -1,0 +1,17 @@
+[Unit]
+Description=go2rtc — WebRTC/RTSP relay for Camplayer
+After=network.target camplayer-firstboot.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+ExecStartPre=/bin/sh -c 'while [ ! -x /usr/local/bin/go2rtc ]; do sleep 2; done'
+ExecStart=/usr/local/bin/go2rtc -config /boot/go2rtc.yaml
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

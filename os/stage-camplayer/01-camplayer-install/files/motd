@@ -1,0 +1,9 @@
+╔══════════════════════════════════════════════════════╗
+║            CAMPLAYER OS v2.0 (Bookworm)              ║
+║        Multi-Camera IP Viewer for Raspberry Pi       ║
+╠══════════════════════════════════════════════════════╣
+║  Web UI:    http://camplayer.local                   ║
+║  Config:    /boot/camplayer-config.ini               ║
+║  System:    /boot/system-config.ini                  ║
+║  Readonly:  os_readonly | os_readwrite               ║
+╚══════════════════════════════════════════════════════╝

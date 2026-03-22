@@ -1,0 +1,19 @@
+[Unit]
+Description=Camplayer — Multi-Camera IP Viewer
+After=camplayer-firstboot.service camplayer-go2rtc.service network.target
+Wants=camplayer-go2rtc.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi
+ExecStart=/usr/local/bin/camplayer
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+
+[Install]
+WantedBy=multi-user.target

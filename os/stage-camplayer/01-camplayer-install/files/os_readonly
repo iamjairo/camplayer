@@ -1,0 +1,9 @@
+#!/bin/bash
+# Remount root filesystem as read-only using overlayfs
+# Usage: os_readonly
+# The system uses an overlay filesystem: lower=real rootfs (ro), upper=tmpfs (rw)
+# This script remounts the lower layer read-only.
+mount -o remount,ro /
+echo "Root filesystem is now read-only."
+echo "Changes will be lost on reboot."
+echo "Run 'os_readwrite' to make changes persistent."

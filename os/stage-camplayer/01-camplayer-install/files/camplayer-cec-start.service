@@ -1,0 +1,12 @@
+[Unit]
+Description=Camplayer CEC — Wake TV on start
+After=camplayer.service
+BindsTo=camplayer.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo "on 0" | cec-client -s -d 1 || true'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=camplayer.service

@@ -1,0 +1,21 @@
+# Camplayer OS — /boot/config.txt additions
+# HDMI force hot-plug (prevents blank screen if TV not on at boot)
+hdmi_force_hotplug=1
+
+# Audio over HDMI
+dtparam=audio=on
+hdmi_drive=2
+
+# GPU memory (Pi 4 only — Pi 5 uses unified memory)
+# Minimum for hardware decode: 128MB
+gpu_mem=128
+
+# Disable Pi rainbow splash
+disable_splash=1
+
+# Enable CEC
+dtoverlay=rpivid-v4l2
+
+# KMS driver (required for Pi 4/5 DRM/KMS)
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2

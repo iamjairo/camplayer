@@ -1,0 +1,20 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for Camplayer",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-toggle-fullscreen",
+    "core:window:allow-set-fullscreen",
+    "shell:allow-open",
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-create",
+    "http:default",
+    "http:allow-fetch",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister-all"
+  ]
+}

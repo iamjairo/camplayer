@@ -1,0 +1,89 @@
+name: Build Camplayer OS Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      no_clean:
+        description: 'Skip clean build (use cached stages)'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU (for ARM64 cross-compile)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Node.js (for React frontend build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/frontend/package-lock.json
+
+      - name: Install pi-gen dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            coreutils quilt parted qemu-user-static debootstrap \
+            zerofree zip dosfstools libarchive-tools libcap2-bin \
+            grep rsync xz-utils file git curl bc xxd kmod binfmt-support
+
+      - name: Cache pi-gen stages
+        uses: actions/cache@v4
+        with:
+          path: /tmp/pi-gen/work
+          key: pigen-bookworm-${{ hashFiles('os/stage-camplayer/**') }}
+          restore-keys: pigen-bookworm-
+
+      - name: Build image
+        run: |
+          chmod +x os/build.sh
+          sudo os/build.sh ${{ github.event.inputs.no_clean == 'true' && '--no-clean' || '' }}
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CamplayerOS-${{ github.ref_name }}
+          path: /tmp/pi-gen/deploy/CamplayerOS-*.img.xz
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: /tmp/pi-gen/deploy/CamplayerOS-*.img.xz
+          generate_release_notes: true
+          body: |
+            ## Camplayer OS ${{ github.ref_name }}
+
+            **Flash with balenaEtcher** or:
+            ```bash
+            xzcat CamplayerOS-*.img.xz | sudo dd of=/dev/sdX bs=4M status=progress
+            ```
+
+            ### Default credentials
+            - User: `pi` / Password: `camplayer`
+            - SSH: enabled on port 22
+            - Web UI: http://camplayer.local
+
+            ### First boot
+            Edit `/boot/camplayer-config.ini` and `/boot/system-config.ini` before
+            or after flashing. go2rtc is downloaded automatically on first boot
+            (internet connection required).
+
+            ### Supported hardware
+            Raspberry Pi 4B, 5, CM4, CM5

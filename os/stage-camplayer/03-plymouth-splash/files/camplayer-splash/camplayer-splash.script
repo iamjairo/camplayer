@@ -1,0 +1,53 @@
+# Camplayer OS Plymouth Boot Splash
+# Minimal text-based dark theme — no binary assets required
+
+screen_width  = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+# Black background
+bg_sprite = Sprite();
+bg_sprite.SetImage(Image.Fill(screen_width, screen_height, 0.0, 0.0, 0.0, 1.0));
+bg_sprite.SetPosition(0, 0, 0);
+
+# Title text  (white)
+title_image  = Image.Text("CAMPLAYER OS", 1.0, 1.0, 1.0, 1.0, "DejaVu Sans Bold 28");
+title_sprite = Sprite(title_image);
+title_sprite.SetPosition(
+  Math.Int((screen_width  - title_image.GetWidth())  / 2),
+  Math.Int((screen_height / 2) - 60),
+  1
+);
+
+# Subtitle text (grey)
+sub_image  = Image.Text("Starting...", 0.6, 0.6, 0.6, 1.0, "DejaVu Sans 16");
+sub_sprite = Sprite(sub_image);
+sub_sprite.SetPosition(
+  Math.Int((screen_width - sub_image.GetWidth()) / 2),
+  Math.Int(screen_height / 2),
+  1
+);
+
+# Dot-progress animation (3 dots cycling)
+dots       = 0;
+tick_count = 0;
+
+fun refresh_callback() {
+  tick_count = tick_count + 1;
+  if (tick_count % 20 == 0) {
+    dots = (dots + 1) % 4;
+    progress_str = "Starting";
+    i = 0;
+    while (i < dots) {
+      progress_str = progress_str + ".";
+      i = i + 1;
+    }
+    sub_image = Image.Text(progress_str, 0.6, 0.6, 0.6, 1.0, "DejaVu Sans 16");
+    sub_sprite.SetImage(sub_image);
+    sub_sprite.SetPosition(
+      Math.Int((screen_width - sub_image.GetWidth()) / 2),
+      Math.Int(screen_height / 2),
+      1
+    );
+  }
+}
+Plymouth.SetRefreshFunction(refresh_callback);

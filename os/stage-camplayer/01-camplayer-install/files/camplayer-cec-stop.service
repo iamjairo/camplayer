@@ -1,0 +1,11 @@
+[Unit]
+Description=Camplayer CEC — Standby TV on stop
+Before=halt.target poweroff.target reboot.target
+
+[Service]
+Type=oneshot
+ExecStop=/bin/sh -c 'echo "standby 0" | cec-client -s -d 1 || true'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=halt.target poweroff.target reboot.target

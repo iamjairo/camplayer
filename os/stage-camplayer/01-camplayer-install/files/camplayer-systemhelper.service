@@ -1,0 +1,17 @@
+[Unit]
+Description=Camplayer Systemhelper — TUI and REST API
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/usr/local/share/camplayer/systemhelper
+ExecStart=/usr/bin/python3 -m systemhelper
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

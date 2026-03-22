@@ -1,0 +1,10 @@
+# Camplayer OS cmdline.txt additions
+# These are applied to /boot/cmdline.txt during first-boot
+
+# Add these parameters to the existing cmdline:
+# quiet splash logo.nologo loglevel=0 vt.global_cursor_default=0
+
+# The result looks like:
+# console=serial0,115200 console=tty1 root=PARTUUID=... rootfstype=ext4
+#   elevator=deadline fsck.repair=yes rootwait quiet splash
+#   logo.nologo loglevel=0 vt.global_cursor_default=0

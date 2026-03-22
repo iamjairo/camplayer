@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Camplayer Splash
+Description=Camplayer OS boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/camplayer-splash
+ScriptFile=/usr/share/plymouth/themes/camplayer-splash/camplayer-splash.script

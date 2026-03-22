@@ -1,0 +1,8 @@
+#!/bin/bash
+# Remount root filesystem as read-write
+# Usage: os_readwrite
+# WARNING: Changes made in read-write mode persist to the SD card.
+mount -o remount,rw /
+echo "Root filesystem is now read-write."
+echo "WARNING: Changes will persist to SD card."
+echo "Run 'os_readonly' when done to restore protection."
