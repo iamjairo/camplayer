@@ -42,7 +42,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             coreutils quilt parted qemu-user-static debootstrap \
             zerofree zip dosfstools libarchive-tools libcap2-bin \
-            grep rsync xz-utils file git curl bc xxd kmod binfmt-support
+            grep rsync xz-utils file git curl bc xxd kmod binfmt-support \
+            arch-test
 
       - name: Cache pi-gen stages
         uses: actions/cache@v4
