@@ -1,0 +1,12 @@
+.gitignore
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+*.img
+*.img.xz
+node_modules/
+web/frontend/dist/
+web/frontend/.vite/
+config/go2rtc.yaml

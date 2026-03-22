@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    restart: unless-stopped
+    network_mode: host          # needed for mDNS + RTSP multicast discovery
+    volumes:
+      - ./config:/config
+    environment:
+      - GO2RTC_CONFIG=/config/go2rtc.yaml
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:1984/api/streams"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  camplayer-api:
+    build:
+      context: ./web/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/config
+      - /dev/shm:/dev/shm          # access live camplayer runtime config
+    environment:
+      - CAMPLAYER_CONFIG=/config/camplayer-config.ini
+      - GO2RTC_URL=http://localhost:1984
+      - CAMPLAYER_RUNTIME_CONFIG=/dev/shm/camplayer-config.ini
+    depends_on:
+      go2rtc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./web/frontend/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - camplayer-api
+      - go2rtc
