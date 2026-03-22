@@ -13,14 +13,14 @@ class CONSTANTS(object):
     CACHE_DIR               = str("%scache/" % APPDATA_DIR)                     # Cache directory for images and stream details
 
     WINDOW_OFFSET           = 10000                                             # Offset for off screen (invisible) windows
-    PLAYER_INITIALIZE_MS    = 2000                                              # Player max initializing time
+    PLAYER_INITIALIZE_MS    = 3000                                              # Player max initializing time
     HW_DEC_MAX_WEIGTH       = 1920 * 1080 * 60                                  # PI hardware decoder limit (experimental)
-    MAX_DECODER_STREAMS     = 16                                                # OMXplayer hard limit
-    DBUS_TIMEOUT_MS         = 1000                                              # Timeout for dbus-send commands
-    DBUS_RETRIES            = 5                                                 # Max dbus-send retries
+    MAX_DECODER_STREAMS     = 16                                                # Max concurrent decoder streams
+    MPV_IPC_DIR             = "/tmp/"                                           # Directory for MPV IPC sockets
+    MPV_IPC_SOCKET_PREFIX   = "camplayer-mpv-"                                  # Socket filename prefix
+    MPV_STARTUP_TIMEOUT_MS  = 3000                                              # MPV max startup time
     LOG_LINE_LEN            = 170                                               # Logger line length in characters
-    PYTHON_VER_MIN          =  (3, 7)                                           # Minimum required Python version
-    MIN_GPU_MEM             = 256                                               # Mininum required GPU memory split
+    PYTHON_VER_MIN          = (3, 11)                                           # Minimum required Python version
     MAX_SCREENS             = 32
     MAX_WINDOWS             = 16
     KEY_TIMEOUT_MS          = 3000

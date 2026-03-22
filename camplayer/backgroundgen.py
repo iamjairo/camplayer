@@ -62,73 +62,52 @@ class BackGroundManager(object):
 
     _MODULE = "BackGroundManager"
 
-    _proc_icons         = [None for _ in range(GLOBALS.NUM_DISPLAYS)]
-    _proc_instant_icon  = [None for _ in range(GLOBALS.NUM_DISPLAYS)]
     _proc_background    = [None for _ in range(GLOBALS.NUM_DISPLAYS)]
-    _icons              = [[] for _ in range(GLOBALS.NUM_DISPLAYS)]
     _backgrounds        = [[] for _ in range(GLOBALS.NUM_DISPLAYS)]
 
     active_icon         = ["" for _ in range(GLOBALS.NUM_DISPLAYS)]
     active_icon_display = ["" for _ in range(GLOBALS.NUM_DISPLAYS)]
     active_background   = ["" for _ in range(GLOBALS.NUM_DISPLAYS)]
 
-    _background_layer = -100    # Must be higher than -127 to hide the framebuffer
-    _foreground_layer = 1000    # Must be higher than the OMXplayer layers
+    # fbi/fim binary to use (detected once at first call)
+    _fb_binary          = None
+    _fb_binary_checked  = False
+
+    @classmethod
+    def _get_fb_binary(cls):
+        """Detect available framebuffer image viewer (fbi or fim)."""
+        if cls._fb_binary_checked:
+            return cls._fb_binary
+        cls._fb_binary_checked = True
+        for binary in ('fbi', 'fim'):
+            try:
+                subprocess.check_output(['which', binary], stderr=subprocess.DEVNULL)
+                cls._fb_binary = binary
+                LOG.DEBUG(cls._MODULE, "Using '%s' for background display" % binary)
+                return cls._fb_binary
+            except Exception:
+                pass
+        LOG.DEBUG(cls._MODULE, "No framebuffer image viewer found (fbi/fim); backgrounds disabled")
+        return None
 
     @classmethod
     def show_icon_instant(cls, filename, display_idx=0):
-        """Show png icon in front of video immediately"""
-
-        if not CONFIG.ENABLE_ICONS or not GLOBALS.PIPNG_SUPPORT:
-            return
-
-        display_idx = 1 if display_idx == 1 else 0
-
-        cls.hide_icon_instant(display_idx)
-
-        pngview_cmd = ["pipng",
-                "-b", "0",                                  # No 2nd background layer under image
-                "-l", str(cls._foreground_layer + 1),       # Set layer number
-                "-d", "2" if display_idx == 0 else "7",     # Set display number
-                "-x", str(CONSTANTS.ICON_OFFSET_X),         # 60px offset x-axis
-                "-y", str(CONSTANTS.ICON_OFFSET_Y),         # 60px offset y-axis
-                "-n",                                       # Non interactive mode
-                "-h",                                       # Hide lower layers
-                str(CONSTANTS.RESOURCE_DIR_ICONS + filename)
-            ]
-
-        cls._proc_instant_icon[display_idx] = \
-            subprocess.Popen(pngview_cmd, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        """Show icon in front of video immediately (stub: icons not supported in fbi backend)."""
+        LOG.DEBUG(cls._MODULE, "show_icon_instant: icons not supported in fbi backend")
 
     @classmethod
     def hide_icon_instant(cls, display_idx=0):
-        """Hide icon loaded with the instant method"""
-
-        if not CONFIG.ENABLE_ICONS or not GLOBALS.PIPNG_SUPPORT:
-            return
-
-        display_idx = 1 if display_idx == 1 else 0
-
-        if cls._proc_instant_icon[display_idx]:
-            cls._proc_instant_icon[display_idx].terminate()
-            cls._proc_instant_icon[display_idx] = None
+        """Hide icon loaded with the instant method (stub)."""
+        LOG.DEBUG(cls._MODULE, "hide_icon_instant: icons not supported in fbi backend")
 
     @classmethod
     def add_icon(cls, filename, display_idx=0):
-        """Add icon to pipng queue"""
-
-        display_idx = 1 if display_idx == 1 else 0
-
-        # Already present? -> ignore
-        for image in cls._icons[display_idx]:
-            if image == filename:
-                return
-
-        cls._icons[display_idx].append(filename)
+        """Add icon to queue (stub: icons not supported in fbi backend)."""
+        LOG.DEBUG(cls._MODULE, "add_icon: icons not supported in fbi backend")
 
     @classmethod
     def add_background(cls, window_count=1, display_idx=0):
-        """Add background to pipng queue"""
+        """Add background to display queue."""
 
         display_idx = 1 if display_idx == 1 else 0
 
@@ -146,131 +125,79 @@ class BackGroundManager(object):
 
     @classmethod
     def load_backgrounds(cls):
-        """Load pipng background queue"""
+        """Display background images using fbi/fim."""
 
-        if CONFIG.BACKGROUND_MODE == BACKGROUND.OFF or not GLOBALS.PIPNG_SUPPORT:
+        if CONFIG.BACKGROUND_MODE == BACKGROUND.OFF or not GLOBALS.SDL2_SUPPORT:
             return
 
-        if CONFIG.BACKGROUND_MODE == BACKGROUND.HIDE_FRAMEBUFFER:
-
-            for display_idx in range(GLOBALS.NUM_DISPLAYS):
-
-                if len(cls._backgrounds[display_idx]) <= 0:
-                    continue
-
-                subprocess.Popen(["pipng", "-b", "000F", "-n", "-d", "2" if display_idx == 0 else "7"],
-                    shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
-        else:
-
-            static_background = CONFIG.BACKGROUND_MODE == BACKGROUND.STATIC
-
-            for display_idx in range(GLOBALS.NUM_DISPLAYS):
-
-                if len(cls._backgrounds[display_idx]) <= 0:
-                    continue
-
-                pngview_cmd = ["pipng",
-                    "-b", "0",                                  # No 2nd background layer under image
-                    "-l", str(cls._background_layer),           # Set layer number
-                    "-d", "2" if display_idx == 0 else "7",     # Set display number
-                    "-h",                                       # Hide lower layers (less GPU performance impact)
-                ]
-
-                if not static_background:
-                    pngview_cmd.append("-i")                    # Start with all images invisible
-
-                # Add all background images, currently limited to 10
-                for image in cls._backgrounds[display_idx]:
-                    pngview_cmd.append(image)
-
-                    # TODO: find best match with static backgrounds and multiple screens
-                    if static_background:
-                        break
-
-                LOG.DEBUG(cls._MODULE, "Loading pipng for display '%i' with command '%s'" %
-                    (display_idx + 1, pngview_cmd))
-
-                cls._proc_background[display_idx] = \
-                    subprocess.Popen(pngview_cmd, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-
-    @classmethod
-    def load_icons(cls):
-        """Load pipng icon queue"""
-
-        if not CONFIG.ENABLE_ICONS or not GLOBALS.PIPNG_SUPPORT:
+        fb_bin = cls._get_fb_binary()
+        if not fb_bin:
             return
 
         for display_idx in range(GLOBALS.NUM_DISPLAYS):
 
-            if len(cls._icons[display_idx]) <= 0:
+            if len(cls._backgrounds[display_idx]) <= 0:
                 continue
 
-            pngview_cmd = ["pipng",
-                "-b", "0",                                  # No 2nd background layer under image
-                "-l", str(cls._foreground_layer),           # Set layer number
-                "-d", "2" if display_idx == 0 else "7",     # Set display number
-                "-i",                                       # Start with all images invisible
-                "-x", str(CONSTANTS.ICON_OFFSET_X),         # 60px offset x-axis
-                "-y", str(CONSTANTS.ICON_OFFSET_Y),         # 60px offset y-axis
-            ]
+            # Terminate any previous background process for this display
+            if cls._proc_background[display_idx]:
+                try:
+                    cls._proc_background[display_idx].terminate()
+                except Exception:
+                    pass
+                cls._proc_background[display_idx] = None
 
-            # Add all images, currently limited to 10
-            for image in cls._icons[display_idx]:
-                pngview_cmd.append(CONSTANTS.RESOURCE_DIR_ICONS + image)
+            # Use the first background image
+            bg_file = cls._backgrounds[display_idx][0]
 
-            LOG.DEBUG(cls._MODULE, "Loading pipng for display '%i' with command '%s'" %
-                (display_idx, pngview_cmd))
+            if fb_bin == 'fbi':
+                fb_cmd = [
+                    'fbi',
+                    '-d', '/dev/fb0' if display_idx == 0 else '/dev/fb1',
+                    '-T', '1',
+                    '-noverbose',
+                    '-a',
+                    '--timeout', '0',
+                    bg_file,
+                ]
+            else:  # fim
+                fb_cmd = [
+                    'fim',
+                    '--no-rc',
+                    '-q',
+                    bg_file,
+                ]
 
-            cls._proc_icons[display_idx] = \
-                subprocess.Popen(pngview_cmd, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            LOG.DEBUG(cls._MODULE, "Loading background for display '%i' with command '%s'" %
+                      (display_idx + 1, fb_cmd))
+
+            try:
+                cls._proc_background[display_idx] = subprocess.Popen(
+                    fb_cmd, shell=False,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception as e:
+                LOG.ERROR(cls._MODULE, "Failed to start background viewer: %s" % str(e))
+
+    @classmethod
+    def load_icons(cls):
+        """Load icon queue (stub: icons not supported in fbi backend)."""
+        LOG.DEBUG(cls._MODULE, "load_icons: icons not supported in fbi backend")
 
     @classmethod
     def show_icon(cls, filename, display_idx=0):
-        """Show pipng icon from queue"""
-
-        if not CONFIG.ENABLE_ICONS or not GLOBALS.PIPNG_SUPPORT:
-            return
-
-        display_idx = 1 if display_idx == 1 else 0
-
-        # Show new image/icon
-        for idx, image in enumerate(cls._icons[display_idx]):
-            if filename == image:
-                LOG.DEBUG(cls._MODULE, "setting icon '%s' visible for display '%i" % (filename, display_idx))
-                cls._proc_icons[display_idx].stdin.write(str(idx).encode('utf-8'))
-                cls._proc_icons[display_idx].stdin.flush()
-
-        cls.active_icon[display_idx] = filename
+        """Show icon (stub: icons not supported in fbi backend)."""
+        cls.active_icon[1 if display_idx == 1 else 0] = filename
 
     @classmethod
     def hide_icon(cls, display_idx=0):
-        """Hide active pipng iconn"""
-
-        if not CONFIG.ENABLE_ICONS or not GLOBALS.PIPNG_SUPPORT:
-            return
-
-        display_idx = 1 if display_idx == 1 else 0
-
-        if not cls.active_icon[display_idx]:
-            return
-
-        LOG.DEBUG(cls._MODULE, "hiding icon '%s' for display '%i" % (cls.active_icon[display_idx], display_idx))
-
-        cls._proc_icons[display_idx].stdin.write("i".encode('utf-8'))
-        cls._proc_icons[display_idx].stdin.flush()
-
-        cls.active_icon[display_idx] = ""
-
-        # pipng needs some milliseconds to read stdin
-        # Especially important when hide_icon() will be immediately followed by show_icon()
-        time.sleep(0.025)
+        """Hide active icon (stub: icons not supported in fbi backend)."""
+        cls.active_icon[1 if display_idx == 1 else 0] = ""
 
     @classmethod
     def show_background(cls, filename, display_idx=0):
-        """Show pipng background from queue"""
+        """Show background from queue (dynamic mode)."""
 
-        if CONFIG.BACKGROUND_MODE != BACKGROUND.DYNAMIC or not GLOBALS.PIPNG_SUPPORT:
+        if CONFIG.BACKGROUND_MODE != BACKGROUND.DYNAMIC or not GLOBALS.SDL2_SUPPORT:
             return
 
         display_idx = 1 if display_idx == 1 else 0
@@ -278,18 +205,48 @@ class BackGroundManager(object):
         if cls.active_background[display_idx] == filename:
             return
 
-        # Show new image/icon
-        for idx, image in enumerate(cls._backgrounds[display_idx]):
-            if filename == image:
-                LOG.DEBUG(cls._MODULE, "setting background '%s' visible for display '%i" % (filename, display_idx))
-                cls._proc_background[display_idx].stdin.write(str(idx).encode('utf-8'))
-                cls._proc_background[display_idx].stdin.flush()
+        fb_bin = cls._get_fb_binary()
+        if not fb_bin:
+            return
+
+        # Terminate existing background and start new one
+        if cls._proc_background[display_idx]:
+            try:
+                cls._proc_background[display_idx].terminate()
+            except Exception:
+                pass
+            cls._proc_background[display_idx] = None
+
+        if fb_bin == 'fbi':
+            fb_cmd = [
+                'fbi',
+                '-d', '/dev/fb0' if display_idx == 0 else '/dev/fb1',
+                '-T', '1',
+                '-noverbose',
+                '-a',
+                '--timeout', '0',
+                filename,
+            ]
+        else:  # fim
+            fb_cmd = [
+                'fim',
+                '--no-rc',
+                '-q',
+                filename,
+            ]
+
+        try:
+            cls._proc_background[display_idx] = subprocess.Popen(
+                fb_cmd, shell=False,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            LOG.ERROR(cls._MODULE, "Failed to start background viewer: %s" % str(e))
 
         cls.active_background[display_idx] = filename
 
     @classmethod
     def scale_background(cls, src_path, dest_path, dest_width, dest_height):
-        """Scale background image to the requested width and height"""
+        """Scale background image to the requested width and height."""
 
         if not GLOBALS.FFMPEG_SUPPORT:
             return False
@@ -309,17 +266,12 @@ class BackGroundManager(object):
 
     @classmethod
     def destroy(cls):
-        """Destroy pipng instances"""
+        """Destroy background viewer instances."""
 
-        if not GLOBALS.PIPNG_SUPPORT:
-            return
-
-        if CONFIG.ENABLE_ICONS:
-            for display_idx in range(GLOBALS.NUM_DISPLAYS):
-                if cls._proc_icons[display_idx]:
-                    cls._proc_icons[display_idx].stdin.write("c".encode('utf-8'))
-
-        if CONFIG.BACKGROUND_MODE == BACKGROUND.DYNAMIC:
-            for display_idx in range(GLOBALS.NUM_DISPLAYS):
-                if cls._proc_background[display_idx]:
-                    cls._proc_background[display_idx].stdin.write("c".encode('utf-8'))
+        for display_idx in range(GLOBALS.NUM_DISPLAYS):
+            if cls._proc_background[display_idx]:
+                try:
+                    cls._proc_background[display_idx].terminate()
+                except Exception:
+                    pass
+                cls._proc_background[display_idx] = None

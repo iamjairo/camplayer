@@ -20,7 +20,7 @@ from screenmanager import Action
 running = True
 
 _LOG_NAME = "Main"
-__version__ = "1.0.0.dev"
+__version__ = "2.0.0.dev"
 
 
 def signal_handler(signum, frame):
@@ -123,13 +123,12 @@ def main():
              % (CONSTANTS.CONFIG_PATH, CONSTANTS.CACHE_DIR))
 
     # Cleanup some stuff in case something went wrong on the previous run
-    utils.kill_service('omxplayer.bin', force=True)
-    utils.kill_service('vlc', force=True)
-    utils.kill_service('pipng', force=True)
+    utils.kill_service('mpv', force=True)
+    utils.kill_service('fbi', force=True)
 
-    # OMXplayer is absolutely required!
-    if not utils.os_package_installed("omxplayer.bin"):
-        sys.exit("OMXplayer not installed but required!")
+    # MPV is absolutely required!
+    if not utils.os_package_installed("mpv"):
+        sys.exit("MPV not installed but required!")
 
     # ffprobe is absolutely required!
     if not utils.os_package_installed("ffprobe"):
@@ -145,9 +144,10 @@ def main():
     GLOBALS.PI_MODEL        = hw_info.get("model")
     GLOBALS.PI_SOC_HEVC     = hw_info.get('hevc')
     GLOBALS.NUM_DISPLAYS    = 2 if hw_info.get('dual_hdmi') else 1
-    GLOBALS.VLC_SUPPORT     = utils.os_package_installed("vlc")
-    GLOBALS.PIPNG_SUPPORT   = utils.os_package_installed("pipng")
+    GLOBALS.MPV_SUPPORT     = utils.os_package_installed("mpv")
+    GLOBALS.SDL2_SUPPORT    = utils.os_package_installed("fbi") or utils.os_package_installed("fim")
     GLOBALS.FFMPEG_SUPPORT  = utils.os_package_installed("ffmpeg")
+    GLOBALS.HWDEC_METHOD    = utils.get_hwdec_method()
     GLOBALS.USERNAME        = os.getenv('USER')
 
     # Log system info
@@ -158,10 +158,11 @@ def main():
     LOG.INFO(_LOG_NAME, str("Raspberry Pi revision         = %s" % hw_info.get("revision")))
     LOG.INFO(_LOG_NAME, str("Raspberry Pi model name       = %s" % hw_info.get("model")))
     LOG.INFO(_LOG_NAME, str("GPU memory allocation         = %i MB" % gpu_mem))
-    LOG.INFO(_LOG_NAME, str("Python version                = %s MB" % sys.version.splitlines()[0]))
-    LOG.INFO(_LOG_NAME, str("VLC installed                 = %s" % GLOBALS.VLC_SUPPORT))
-    LOG.INFO(_LOG_NAME, str("pipng installed               = %s" % GLOBALS.PIPNG_SUPPORT))
+    LOG.INFO(_LOG_NAME, str("Python version                = %s" % sys.version.splitlines()[0]))
+    LOG.INFO(_LOG_NAME, str("MPV installed                 = %s" % GLOBALS.MPV_SUPPORT))
+    LOG.INFO(_LOG_NAME, str("fbi/fim installed             = %s" % GLOBALS.SDL2_SUPPORT))
     LOG.INFO(_LOG_NAME, str("ffmpeg installed              = %s" % GLOBALS.FFMPEG_SUPPORT))
+    LOG.INFO(_LOG_NAME, str("Hardware decode method        = %s" % GLOBALS.HWDEC_METHOD))
     LOG.INFO(_LOG_NAME, "*********************************************************")
 
     # Register for keyboard 'press' events, requires root
@@ -177,14 +178,11 @@ def main():
         if not hw_info.get("supported"):
             sys.exit("Unsupported hardware with revision %s ..." % hw_info.get("revision"))
 
-        if gpu_mem < CONSTANTS.MIN_GPU_MEM:
-            sys.exit("GPU memory of '%i' MB insufficient ..." % gpu_mem)
-
     # Auto detect screen resolution
-    # For the raspberry pi 4:
+    # For the raspberry pi 4/5:
     #   both HDMI displays are supposed to have the same configuration
     if CONFIG.SCREEN_HEIGHT == 0 or CONFIG.SCREEN_WIDTH == 0:
-        display_conf = utils.get_display_mode()
+        display_conf = utils.get_display_mode(display=0)
         CONFIG.SCREEN_HEIGHT = display_conf.get('res_height')
         CONFIG.SCREEN_WIDTH = display_conf.get('res_width')
         LOG.INFO(_LOG_NAME, "Detected screen resolution for HDMI0 is '%ix%i@%iHz'" % (
@@ -198,7 +196,7 @@ def main():
     # Are we sure the 2nd HDMI is on for dual HDMI versions?
     if GLOBALS.NUM_DISPLAYS == 2:
         # Check for resolution instead of display name as the latter one is empty with force HDMI hotplug
-        if not utils.get_display_mode(display=7).get('res_height'):
+        if not utils.get_display_mode(display=1).get('res_height'):
             GLOBALS.NUM_DISPLAYS = 1
 
     # Calculate the virtual screen size now that we now the physical screen size
@@ -301,9 +299,8 @@ def main():
     # Cleanup stuff before exit
     keyboard.destroy()
     BackGroundManager.destroy()
-    utils.kill_service('omxplayer.bin', force=True)
-    utils.kill_service('vlc', force=True)
-    utils.kill_service('pipng', force=True)
+    utils.kill_service('mpv', force=True)
+    utils.kill_service('fbi', force=True)
 
     LOG.INFO(_LOG_NAME, "Exiting raspberry pi camplayer, have a nice day!")
     sys.exit(0)
